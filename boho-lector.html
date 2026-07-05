@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a1a3f">
+<title>Boho Night · Acceso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root{
+    --navy:#0a1a3f; --navy-2:#122a5c; --navy-deep:#06122b;
+    --gold:#c9a34e; --gold-soft:#d9bd7a; --cream:#f2ead8;
+    --ok:#3ea86b; --dup:#c99a3e; --err:#c0524a;
+    --line:rgba(201,163,78,.28);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(120% 90% at 50% 0%, var(--navy-2) 0%, var(--navy) 45%, var(--navy-deep) 100%);
+    color:var(--cream); font-family:'Jost',sans-serif; font-weight:300;
+    min-height:100dvh; display:flex; flex-direction:column;
+    padding:env(safe-area-inset-top) 20px calc(env(safe-area-inset-bottom) + 16px);
+    overflow-x:hidden;
+  }
+
+  header{text-align:center; padding:22px 0 14px}
+  .moon{font-size:26px; color:var(--gold); line-height:1}
+  .eyebrow{
+    display:inline-block; margin-top:12px; padding:7px 20px;
+    border:1px solid var(--line); border-radius:40px;
+    font-size:11px; letter-spacing:.32em; color:var(--gold-soft);
+    text-transform:uppercase;
+  }
+  h1{
+    font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:500;
+    font-size:38px; letter-spacing:.01em; margin-top:14px; line-height:1;
+  }
+  .date{font-size:11px; letter-spacing:.3em; color:var(--gold-soft); margin-top:8px; text-transform:uppercase}
+
+  .divider{
+    border:none; border-top:1px dashed var(--line); margin:18px 0 4px;
+  }
+
+  /* Scanner */
+  .stage{flex:1; display:flex; flex-direction:column; justify-content:center; gap:18px}
+  #reader-wrap{
+    position:relative; width:100%; max-width:340px; margin:0 auto;
+    aspect-ratio:1; border-radius:22px; overflow:hidden;
+    border:1px solid var(--line); background:#000;
+    box-shadow:0 24px 60px -30px rgba(0,0,0,.9);
+  }
+  #reader{width:100%; height:100%}
+  #reader video{width:100%!important; height:100%!important; object-fit:cover!important}
+  /* Oculta la UI por defecto de la librería */
+  #reader__dashboard_section_csr, #reader__status_span, #reader__header_message{display:none!important}
+  #reader img{display:none!important}
+  .frame{
+    position:absolute; inset:0; pointer-events:none; z-index:2;
+  }
+  .frame::before{
+    content:''; position:absolute; inset:14%;
+    border:1.5px solid var(--gold-soft); border-radius:14px;
+    box-shadow:0 0 0 100vmax rgba(6,18,43,.45);
+  }
+  .scanline{
+    position:absolute; left:16%; right:16%; height:2px; z-index:3;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent);
+    top:16%; animation:sweep 2.6s ease-in-out infinite; opacity:.9;
+  }
+  @keyframes sweep{0%,100%{top:16%}50%{top:82%}}
+  @media (prefers-reduced-motion:reduce){.scanline{animation:none;top:50%}}
+
+  .hint{text-align:center; font-size:13px; letter-spacing:.04em; color:var(--gold-soft); min-height:18px}
+
+  /* Result card */
+  .card{
+    position:fixed; inset:0; z-index:20; display:none;
+    flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; text-align:center; padding:40px 28px;
+    background:radial-gradient(120% 90% at 50% 0%, var(--navy-2) 0%, var(--navy-deep) 100%);
+  }
+  .card.show{display:flex; animation:pop .28s ease-out}
+  @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+  .badge{
+    width:96px; height:96px; border-radius:50%; display:grid; place-items:center;
+    font-size:52px; margin-bottom:8px; line-height:1;
+  }
+  .badge.ok{background:rgba(62,168,107,.14); border:2px solid var(--ok); color:var(--ok)}
+  .badge.dup{background:rgba(201,154,62,.14); border:2px solid var(--dup); color:var(--dup)}
+  .badge.err{background:rgba(192,82,74,.14); border:2px solid var(--err); color:var(--err)}
+  .card .name{font-family:'Cormorant Garamond',serif; font-size:34px; font-weight:500}
+  .card .status{font-size:14px; letter-spacing:.14em; text-transform:uppercase; margin-top:2px}
+  .card .status.ok{color:var(--ok)} .card .status.dup{color:var(--dup)} .card .status.err{color:var(--err)}
+  .card .meta{font-size:13px; color:var(--gold-soft); margin-top:6px; letter-spacing:.03em}
+  .card .idtag{font-size:11px; letter-spacing:.28em; color:var(--gold-soft); margin-top:14px; text-transform:uppercase}
+  .btn{
+    margin-top:26px; padding:15px 40px; border:1px solid var(--gold);
+    background:transparent; color:var(--gold); border-radius:40px;
+    font-family:'Jost',sans-serif; font-size:13px; letter-spacing:.24em;
+    text-transform:uppercase; cursor:pointer;
+  }
+  .btn:active{background:var(--gold); color:var(--navy-deep)}
+
+  /* Footer bar */
+  .bar{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:14px; font-size:12px; letter-spacing:.06em; color:var(--gold-soft);
+  }
+  .bar b{color:var(--cream); font-weight:400}
+  .link{color:var(--gold); text-decoration:none; border-bottom:1px solid var(--line); padding-bottom:1px}
+
+  /* Setup modal */
+  .setup{
+    position:fixed; inset:0; z-index:30; display:none;
+    flex-direction:column; justify-content:center; gap:16px;
+    background:var(--navy-deep); padding:40px 28px;
+  }
+  .setup.show{display:flex}
+  .setup h2{font-family:'Cormorant Garamond',serif; font-style:italic; font-size:28px; text-align:center}
+  .setup p{font-size:13px; color:var(--gold-soft); text-align:center; line-height:1.6}
+  .setup input{
+    width:100%; padding:15px 16px; border-radius:12px; margin-top:4px;
+    border:1px solid var(--line); background:rgba(255,255,255,.04);
+    color:var(--cream); font-family:'Jost'; font-size:14px;
+  }
+  .setup input::placeholder{color:rgba(242,234,216,.35)}
+  .setup .btn{align-self:center; margin-top:8px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="moon">☾</div>
+  <div class="eyebrow">Acceso a la noche</div>
+  <h1>Boho Night</h1>
+  <div class="date">18 de julio, 2026</div>
+</header>
+<hr class="divider">
+
+<main class="stage">
+  <div id="reader-wrap">
+    <div id="reader"></div>
+    <div class="frame"></div>
+    <div class="scanline"></div>
+  </div>
+  <div class="hint" id="hint">Apunta al código del boleto</div>
+</main>
+
+<div class="bar">
+  <span>Registrados: <b id="count">—</b></span>
+  <a class="link" id="cfg" href="#">Ajustes</a>
+</div>
+
+<!-- Resultado -->
+<div class="card" id="card">
+  <div class="badge" id="badge"></div>
+  <div class="name" id="rname"></div>
+  <div class="status" id="rstatus"></div>
+  <div class="meta" id="rmeta"></div>
+  <div class="idtag" id="rid"></div>
+  <button class="btn" id="again">Siguiente invitado</button>
+</div>
+
+<!-- Setup -->
+<div class="setup" id="setup">
+  <h2>Conectar la hoja</h2>
+  <p>Pega la URL de tu Google Apps Script (la que termina en <b>/exec</b>). Se guarda solo en este dispositivo.</p>
+  <input id="url" type="url" placeholder="https://script.google.com/…/exec" autocomplete="off">
+  <button class="btn" id="saveUrl">Guardar y empezar</button>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const KEY = 'boho_endpoint';
+let endpoint = localStorage.getItem(KEY) || '';
+let scanner = null, busy = false, lastId = '', lastTime = 0;
+
+// ---- Parseo del QR (texto multilínea del boleto) ----
+function parseTicket(text){
+  const id = (text.match(/ID:\s*([A-Z0-9\-]+)/i) || [])[1] || '';
+  const nombre = (text.match(/Invitad@?:\s*(.+)/i) || [])[1]?.trim() || '';
+  const pase = (text.match(/Pase:\s*(.+)/i) || [])[1]?.trim() || '';
+  return { id: id.toUpperCase(), nombre, pase, raw: text };
+}
+
+// ---- Registrar en el Sheet ----
+async function registrar(t){
+  const res = await fetch(endpoint, {
+    method:'POST',
+    // Apps Script requiere text/plain para evitar preflight CORS
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ id:t.id, nombre:t.nombre, pase:t.pase })
+  });
+  return res.json();
+}
+
+function showCard(kind, name, statusText, meta, id){
+  const badge = $('#badge'), st = $('#rstatus');
+  badge.className = 'badge ' + kind;
+  badge.textContent = kind==='ok' ? '✓' : kind==='dup' ? '↺' : '✕';
+  $('#rname').textContent = name || '—';
+  st.className = 'status ' + kind;
+  st.textContent = statusText;
+  $('#rmeta').textContent = meta || '';
+  $('#rid').textContent = id ? 'ID · ' + id : '';
+  $('#card').classList.add('show');
+  if (navigator.vibrate) navigator.vibrate(kind==='ok' ? [40,60,40] : kind==='dup' ? [120] : [200]);
+}
+
+async function onScan(text){
+  if (busy) return;
+  const t = parseTicket(text);
+  if (!t.id){ return; } // no es un boleto válido, ignora
+  // Anti-rebote: mismo QR en <4s no repite
+  const now = Date.now();
+  if (t.id === lastId && now - lastTime < 4000) return;
+  lastId = t.id; lastTime = now;
+
+  busy = true;
+  $('#hint').textContent = 'Registrando…';
+  try{
+    const r = await registrar(t);
+    if (r.ok && r.nuevo){
+      showCard('ok', t.nombre || r.nombre, 'Confirmado', t.pase, t.id);
+      loadCount();
+    } else if (r.duplicado){
+      showCard('dup', r.nombre || t.nombre, 'Ya había entrado', 'Entró: ' + (r.hora||''), t.id);
+    } else {
+      showCard('err', t.nombre || '—', 'No se pudo registrar', r.error || '', t.id);
+    }
+  }catch(e){
+    showCard('err', t.nombre || '—', 'Sin conexión', 'Revisa tu internet y reintenta', t.id);
+  }
+  $('#hint').textContent = 'Apunta al código del boleto';
+}
+
+async function loadCount(){
+  if (!endpoint) return;
+  try{
+    const r = await (await fetch(endpoint)).json();
+    $('#count').textContent = r.total ?? '—';
+  }catch(e){ $('#count').textContent = '—'; }
+}
+
+async function startScanner(){
+  if (scanner) return;
+  scanner = new Html5Qrcode('reader', { verbose:false });
+  try{
+    await scanner.start(
+      { facingMode:'environment' },
+      { fps:10, qrbox:{width:230,height:230}, aspectRatio:1 },
+      onScan,
+      ()=>{} // ignora "no encontrado" frame a frame
+    );
+  }catch(e){
+    $('#hint').textContent = 'No pude abrir la cámara. Revisa permisos.';
+  }
+}
+
+// ---- UI wiring ----
+$('#again').onclick = ()=>{ $('#card').classList.remove('show'); busy=false; };
+$('#cfg').onclick = e=>{ e.preventDefault(); $('#url').value = endpoint; $('#setup').classList.add('show'); };
+$('#saveUrl').onclick = ()=>{
+  const v = $('#url').value.trim();
+  if (!/\/exec$/.test(v)){ alert('La URL debe terminar en /exec'); return; }
+  endpoint = v; localStorage.setItem(KEY, v);
+  $('#setup').classList.remove('show');
+  loadCount(); startScanner();
+};
+
+// Arranque
+window.addEventListener('load', ()=>{
+  if (!endpoint){ $('#setup').classList.add('show'); }
+  else { loadCount(); startScanner(); }
+});
+</script>
+</body>
+</html>
