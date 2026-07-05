@@ -177,7 +177,9 @@
 <script>
 const $ = s => document.querySelector(s);
 const KEY = 'boho_endpoint';
-let endpoint = localStorage.getItem(KEY) || '';
+// URL fija del Apps Script. Arranca directo a la cámara, no la pide.
+const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbziPfj1Ezr_Jnu01nDLC6fvUDrEgY3zXvRjsIiPf9t5Iy-5jiaHzxmyUsf3ODqikhvK/exec';
+let endpoint = localStorage.getItem(KEY) || DEFAULT_ENDPOINT;
 let scanner = null, busy = false, lastId = '', lastTime = 0;
 
 // ---- Parseo del QR (texto multilínea del boleto) ----
@@ -273,10 +275,10 @@ $('#saveUrl').onclick = ()=>{
   loadCount(); startScanner();
 };
 
-// Arranque
+// Arranque — directo a la cámara
 window.addEventListener('load', ()=>{
-  if (!endpoint){ $('#setup').classList.add('show'); }
-  else { loadCount(); startScanner(); }
+  loadCount();
+  startScanner();
 });
 </script>
 </body>
